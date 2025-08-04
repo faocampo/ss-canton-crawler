@@ -85,6 +85,7 @@ def run(
     sections_file: str,
     max_workers: int = 4,
     max_links: int | None = None,
+    session: requests.Session | None = None,
 ) -> None:
     """Start the crawler.
 
@@ -99,9 +100,12 @@ def run(
         Number of worker threads to spawn.
     max_links:
         Optional limit of total links to visit, used mainly for tests.
+    session:
+        Optional ``requests.Session`` to use for HTTP requests. When ``None`` a
+        new session is created internally.
     """
 
-    session = requests.Session()
+    session = session or requests.Session()
     visited: Set[str] = set()
     lock = threading.Lock()
     q: "Queue[Tuple[str, str]]" = Queue()
