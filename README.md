@@ -1,6 +1,6 @@
 # ss-canton-crawler
 
-Herramienta que recorre el sitio de la Secretaría de Salud de Cantón y descarga la información relevante.
+Herramienta que recorre el sitio de la Simple Solutions del barrio indicado y descarga la información relevante.
 
 ## Requisitos
 
