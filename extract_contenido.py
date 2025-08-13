@@ -30,6 +30,7 @@ class ExtractResult:
     """Container for extracted information."""
 
     title: Optional[str]
+    date: Optional[str]
     text: str
     used_fallback: Optional[str]
 
@@ -67,6 +68,12 @@ def find_target_region(soup: BeautifulSoup) -> Tuple[Tag, str]:
     region = max(candidates, key=lambda t: len(t.get_text(" ", strip=True))) if candidates else soup
     return region, "largest"
 
+
+def find_date(soup: BeautifulSoup) -> Optional[str]:
+    """Return the text contained in ``td.novedadespop_fecha`` if present."""
+
+    tag = soup.select_one("td.novedadespop_fecha")
+    return normalize_text(tag.get_text()) if tag else None
 
 def _cleanup_region(region: Tag) -> None:
     for tag in region.select("script,style,noscript,header,footer,nav"):
@@ -142,9 +149,9 @@ def extract_text(html: str) -> ExtractResult:
     region, fallback = find_target_region(soup)
     title, text = extract_from_region(region)
     text = normalize_text(text)
+    date = find_date(soup)
     LOGGER.debug("Used region: %s", fallback)
-    return ExtractResult(title=title, text=text, used_fallback=fallback)
-
+    return ExtractResult(title=title, date=date, text=text, used_fallback=fallback)
 
 def process_file(path: Path, encoding: str) -> ExtractResult:
     try:
@@ -152,8 +159,7 @@ def process_file(path: Path, encoding: str) -> ExtractResult:
         return extract_text(html)
     except Exception as exc:  # pragma: no cover - defensive
         LOGGER.warning("Failed to process %s: %s", path, exc)
-        return ExtractResult(title=None, text="", used_fallback="error")
-
+        return ExtractResult(title=None, date=None, text="", used_fallback="error")
 
 def aggregate_and_write(results: List[Tuple[Path, ExtractResult]], out_file: Path, fmt: str) -> None:
     results.sort(key=lambda x: str(x[0]))
@@ -162,17 +168,22 @@ def aggregate_and_write(results: List[Tuple[Path, ExtractResult]], out_file: Pat
     if fmt == "jsonl":
         with out_file.open("w", encoding="utf-8") as handle:
             for path, res in results:
-                obj = {"file": str(path), "title": res.title, "text": res.text}
+                obj = {"file": str(path), "date": res.date, "title": res.title, "text": res.text}
                 handle.write(json.dumps(obj, ensure_ascii=False) + "\n")
         return
 
     with out_file.open("w", encoding="utf-8") as handle:
         for idx, (path, res) in enumerate(results):
-            lines: List[str] = []
+            meta: List[str] = []
+            if res.date:
+                meta.append(res.date)
             if res.title:
-                lines.append(f"# {res.title}" if fmt == "md" else res.title)
-            lines.append(res.text)
-            content = "\n".join(lines).rstrip()
+                meta.append(f"# {res.title}" if fmt == "md" else res.title)
+            if meta:
+                content = "\n".join(meta) + "\n\n" + res.text
+            else:
+                content = res.text
+            content = content.rstrip()
             handle.write(content)
             if idx != len(results) - 1:
                 handle.write("\n\n")
