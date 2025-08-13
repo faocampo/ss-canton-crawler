@@ -75,7 +75,6 @@ def find_date(soup: BeautifulSoup) -> Optional[str]:
     tag = soup.select_one("td.novedadespop_fecha")
     return normalize_text(tag.get_text()) if tag else None
 
-
 def _cleanup_region(region: Tag) -> None:
     for tag in region.select("script,style,noscript,header,footer,nav"):
         tag.decompose()
@@ -154,7 +153,6 @@ def extract_text(html: str) -> ExtractResult:
     LOGGER.debug("Used region: %s", fallback)
     return ExtractResult(title=title, date=date, text=text, used_fallback=fallback)
 
-
 def process_file(path: Path, encoding: str) -> ExtractResult:
     try:
         html = load_html(path, encoding)
@@ -162,7 +160,6 @@ def process_file(path: Path, encoding: str) -> ExtractResult:
     except Exception as exc:  # pragma: no cover - defensive
         LOGGER.warning("Failed to process %s: %s", path, exc)
         return ExtractResult(title=None, date=None, text="", used_fallback="error")
-
 
 def aggregate_and_write(results: List[Tuple[Path, ExtractResult]], out_file: Path, fmt: str) -> None:
     results.sort(key=lambda x: str(x[0]))

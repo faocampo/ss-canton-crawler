@@ -29,4 +29,3 @@ def test_extract_sample() -> None:
     )
     assert combined == expected
     assert result.date == "Martes 12 de Agosto de 2025"
-
